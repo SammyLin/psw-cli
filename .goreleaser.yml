@@ -1,0 +1,95 @@
+# GoReleaser configuration for psw-cli
+# https://goreleaser.com/introduction
+
+project_name: psw-cli
+
+archives:
+  - format: binary
+    id: psw-cli
+    builds:
+      - psw-cli
+    replacements:
+      amd64: x86_64
+      arm64: ARM64
+      darwin: macOS
+      linux: Linux
+      windows: Windows
+
+  - format: binary
+    id: psw-cli-verify
+    builds:
+      - psw-cli-verify
+    replacements:
+      amd64: x86_64
+      arm64: ARM64
+      darwin: macOS
+      linux: Linux
+
+builds:
+  - id: psw-cli
+    main: .
+    binary: psw-cli
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -trimpath
+
+  - id: psw-cli-verify
+    main: ./cmd/verify-server
+    binary: psw-cli-verify
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -trimpath
+
+brews:
+  - name: psw-cli
+    repository:
+      owner: SammyLin
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    description: "Secure CLI password manager with age encryption and macOS Keychain"
+    homepage: "https://github.com/SammyLin/psw-cli"
+    license: "MIT"
+    test: |
+      system "#{bin}/psw-cli --version"
+    install: |
+      bin.install "psw-cli"
+      if File.exist?("psw-cli-verify")
+        bin.install "psw-cli-verify"
+      end
+    dependencies: []
+    platform: darwin
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ .Tag }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+
+release:
+  github:
+    owner: SammyLin
+    name: psw-cli
+  name_template: "{{ .Tag }}"
+  draft: true

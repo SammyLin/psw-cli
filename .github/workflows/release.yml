@@ -5,37 +5,26 @@ on:
     tags:
       - 'v*'
 
-jobs:
-  release:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
+permissions:
+  contents: write
 
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.23'
 
-      - name: Build for all platforms
-        run: |
-          GOOS=linux GOARCH=amd64 go build -o psw-cli-linux-amd64 .
-          GOOS=linux GOARCH=arm64 go build -o psw-cli-linux-arm64 .
-          GOOS=darwin GOARCH=amd64 go build -o psw-cli-darwin-amd64 .
-          GOOS=darwin GOARCH=arm64 go build -o psw-cli-darwin-arm64 .
-          GOOS=windows GOARCH=amd64 go build -o psw-cli-windows-amd64.exe .
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
         with:
-          files: |
-            psw-cli-linux-amd64
-            psw-cli-linux-arm64
-            psw-cli-darwin-amd64
-            psw-cli-darwin-arm64
-            psw-cli-windows-amd64.exe
-          draft: true
+          version: '~> v2'
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
