@@ -7,7 +7,7 @@ import (
 )
 
 // Run executes the CLI application.
-func Run(ctx context.Context) error {
+func Run(ctx context.Context, args []string) error {
 	app := &cli.Command{
 		Name:                 "psw-cli",
 		Usage:                "Secure CLI password manager",
@@ -21,5 +21,5 @@ func Run(ctx context.Context) error {
 		},
 	}
 
-	return app.Run(ctx, []string{"psw-cli"})
+	return app.Run(ctx, args)
 }

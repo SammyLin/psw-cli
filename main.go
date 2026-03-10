@@ -45,7 +45,7 @@ func main() {
 	ctx := context.WithValue(context.Background(), "config", config)
 
 	// Run CLI
-	if err := cmd.Run(ctx); err != nil {
+	if err := cmd.Run(ctx, os.Args); err != nil {
 		log.Printf("Error: %v", err)
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
