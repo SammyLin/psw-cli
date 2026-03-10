@@ -1,6 +1,8 @@
 # psw-cli
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/SammyLin/psw-cli.svg)](https://pkg.go.dev/github.com/SammyLin/psw-cli)
+[![Tests](https://github.com/SammyLin/psw-cli/actions/workflows/test.yml/badge.svg)](https://github.com/SammyLin/psw-cli/actions/workflows/test.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/SammyLin/psw-cli)](https://goreportcard.com/report/github.com/SammyLin/psw-cli)
 [![age](https://img.shields.io/badge/age-v1-blue)](https://age-encryption.org/v1)
 [![macOS](https://img.shields.io/badge/macOS-Keychain-green)](https://developer.apple.com/documentation/security/keychain_services)
 
