@@ -8,13 +8,8 @@ import (
 	"path/filepath"
 
 	"github.com/SammyLin/psw-cli/cmd"
+	"github.com/SammyLin/psw-cli/pkg"
 )
-
-type Config struct {
-	VerificationURL string
-	TelegramBotURL  string
-	TelegramChatID  string
-}
 
 func main() {
 	// Ensure log directory exists
@@ -36,7 +31,7 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	// Load configuration from environment variables
-	config := &Config{
+	config := &pkg.Config{
 		VerificationURL: getEnv("PSW_CLI_VERIFY_URL", "https://psw-cli.3mi.tw/verify"),
 		TelegramBotURL:  getEnv("PSW_CLI_TELEGRAM_URL", "https://api.telegram.org/bot"),
 		TelegramChatID:  getEnv("PSW_CLI_TELEGRAM_CHAT_ID", ""),
