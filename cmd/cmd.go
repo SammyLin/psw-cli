@@ -18,6 +18,7 @@ func Run(ctx context.Context, args []string) error {
 			Get(ctx),
 			Remove(ctx),
 			Vault(ctx),
+			Resolve(ctx),
 		},
 	}
 

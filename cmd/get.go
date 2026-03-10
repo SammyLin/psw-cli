@@ -22,6 +22,10 @@ func Get(ctx context.Context) *cli.Command {
 				Usage:    "Vault name",
 				Required: true,
 			},
+			&cli.BoolFlag{
+				Name:  "raw",
+				Usage: "Output only the secret value without prefix",
+			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			key := cmd.Args().First()
@@ -94,7 +98,11 @@ func Get(ctx context.Context) *cli.Command {
 			}
 
 			log.Printf("Retrieved secret '%s' from vault '%s'", key, vaultName)
-			fmt.Printf("Secret: %s\n", secret)
+			if cmd.Bool("raw") {
+				fmt.Print(secret)
+			} else {
+				fmt.Printf("Secret: %s\n", secret)
+			}
 			return nil
 		},
 	}
