@@ -14,7 +14,7 @@ func Run(ctx context.Context, args []string) error {
 		UseShortOptionHandling: true,
 		Commands: []*cli.Command{
 			Init(ctx),
-			Post(ctx),
+			Set(ctx),
 			Get(ctx),
 			Remove(ctx),
 			Vault(ctx),

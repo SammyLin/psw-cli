@@ -9,10 +9,10 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-// Post encrypts and stores a secret in the specified vault.
-func Post(ctx context.Context) *cli.Command {
+// Set encrypts and stores a secret in the specified vault.
+func Set(ctx context.Context) *cli.Command {
 	return &cli.Command{
-		Name:      "post",
+		Name:      "set",
 		Usage:     "Encrypt and store a secret in a vault",
 		ArgsUsage: "<key> <value>",
 		Flags: []cli.Flag{
