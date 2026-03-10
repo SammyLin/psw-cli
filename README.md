@@ -1,5 +1,9 @@
 # psw-cli
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/SammyLin/psw-cli.svg)](https://pkg.go.dev/github.com/SammyLin/psw-cli)
+[![age](https://img.shields.io/badge/age-v1-blue)](https://age-encryption.org/v1)
+[![macOS](https://img.shields.io/badge/macOS-Keychain-green)](https://developer.apple.com/documentation/security/keychain_services)
+
 A secure CLI password manager with age encryption and macOS Keychain integration.
 
 ## Features

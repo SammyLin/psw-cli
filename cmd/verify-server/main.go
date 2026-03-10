@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"time"
 
@@ -225,14 +226,15 @@ func verifyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check expiration
-	expireTime, err := time.Parse(time.RFC3339, expire)
+	// Check expiration - expire is Unix timestamp
+	expireInt, err := strconv.ParseInt(expire, 10, 64)
 	if err != nil {
 		data := pageData{Vault: vault, Token: token, Expire: expire, Sig: sig, Error: "Invalid expiration format"}
 		tmpl.Execute(w, data)
 		return
 	}
 
+	expireTime := time.Unix(expireInt, 0)
 	if time.Now().After(expireTime) {
 		data := pageData{Vault: vault, Token: token, Expire: expire, Sig: sig, Error: "Token has expired"}
 		tmpl.Execute(w, data)
@@ -257,7 +259,8 @@ func verifyHandler(w http.ResponseWriter, r *http.Request) {
 
 func confirmHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Redirect(w, r, "/verify", http.StatusFound)
+		// Preserve query parameters when redirecting
+		http.Redirect(w, r, r.URL.RequestURI(), http.StatusFound)
 		return
 	}
 
