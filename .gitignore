@@ -1,0 +1,10 @@
+# Binaries
+psw-cli
+psw-cli-verify
+*.exe
+
+# Build output
+dist/
+
+# OS files
+.DS_Store
