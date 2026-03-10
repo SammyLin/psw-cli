@@ -1,17 +1,16 @@
 package main
 
 import (
-	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"io"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -21,13 +20,18 @@ import (
 
 type Config struct {
 	VerificationURL string
-	TelegramBotURL  string
-	TelegramChatID  string
 	HMACSecret      string
 }
 
 type usedToken struct {
 	usedAt time.Time
+}
+
+type Approval struct {
+	Vault      string    `json:"vault"`
+	Token      string    `json:"token"`
+	ApprovedAt time.Time `json:"approved_at"`
+	ExpiresAt  time.Time `json:"expires_at"`
 }
 
 var (
@@ -165,40 +169,40 @@ func verifyHMAC(vault, token, expire, sig string) bool {
 	return hmac.Equal([]byte(expectedSig), []byte(sig))
 }
 
-func sendTelegramNotification(vault, token string) error {
-	if config.TelegramBotURL == "" || config.TelegramChatID == "" {
-		log.Println("Telegram not configured, skipping notification")
-		return nil
-	}
-
-	message := fmt.Sprintf("🔐 <b>Vault Access Verified</b>\n\n✅ Vault: <code>%s</code>\n🔑 Token: <code>%s</code>\n⏰ Time: %s",
-		vault, token, time.Now().Format("2006-01-02 15:04:05"))
-
-	apiURL := fmt.Sprintf("%s/sendMessage", config.TelegramBotURL)
-
-	payload := map[string]string{
-		"chat_id":    config.TelegramChatID,
-		"text":       message,
-		"parse_mode": "HTML",
-	}
-
-	payloadBytes, err := json.Marshal(payload)
+func writeApprovalFile(vault, token string) error {
+	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		return fmt.Errorf("failed to marshal payload: %w", err)
+		return fmt.Errorf("failed to get home directory: %w", err)
 	}
 
-	resp, err := http.Post(apiURL, "application/json", bytes.NewBuffer(payloadBytes))
+	// Create approval directory: ~/.psw-cli/verify/approved/{vault}/
+	approveDir := filepath.Join(homeDir, ".psw-cli", "verify", "approved", vault)
+	if err := os.MkdirAll(approveDir, 0700); err != nil {
+		return fmt.Errorf("failed to create approval directory: %w", err)
+	}
+
+	// Approval expires in 24 hours
+	expiresAt := time.Now().Add(24 * time.Hour)
+
+	approval := Approval{
+		Vault:      vault,
+		Token:      token,
+		ApprovedAt: time.Now(),
+		ExpiresAt:  expiresAt,
+	}
+
+	// Write to {token}.json
+	approvalFile := filepath.Join(approveDir, token+".json")
+	data, err := json.MarshalIndent(approval, "", "  ")
 	if err != nil {
-		return fmt.Errorf("failed to send telegram: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("telegram API error: %s", string(body))
+		return fmt.Errorf("failed to marshal approval: %w", err)
 	}
 
-	log.Printf("Telegram notification sent for vault: %s", vault)
+	if err := os.WriteFile(approvalFile, data, 0600); err != nil {
+		return fmt.Errorf("failed to write approval file: %w", err)
+	}
+
+	log.Printf("Approval file written: %s", approvalFile)
 	return nil
 }
 
@@ -275,9 +279,12 @@ func confirmHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	usedTokens.Store(token, usedToken{usedAt: time.Now()})
 
-	// Send Telegram notification
-	if err := sendTelegramNotification(vault, token); err != nil {
-		log.Printf("Failed to send telegram notification: %v", err)
+	// Write approval file
+	if err := writeApprovalFile(vault, token); err != nil {
+		log.Printf("Failed to write approval file: %v", err)
+		data := pageData{Vault: vault, Error: "Failed to create approval"}
+		tmpl.Execute(w, data)
+		return
 	}
 
 	data := pageData{Vault: vault, Success: true}
@@ -293,8 +300,6 @@ func main() {
 	// Load configuration
 	config = &Config{
 		VerificationURL: getEnv("PSW_CLI_VERIFY_URL", "http://localhost:8080"),
-		TelegramBotURL:  getEnv("PSW_CLI_TELEGRAM_URL", "https://api.telegram.org/bot"),
-		TelegramChatID:  getEnv("PSW_CLI_TELEGRAM_CHAT_ID", ""),
 		HMACSecret:      getEnv("PSW_CLI_HMAC_SECRET", ""),
 	}
 
@@ -313,7 +318,6 @@ func main() {
 
 	log.Printf("Starting verify server on port %s", port)
 	log.Printf("Verification URL: %s", config.VerificationURL)
-	log.Printf("Telegram configured: %s", config.TelegramBotURL != "" && config.TelegramChatID != "")
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
