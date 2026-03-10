@@ -1,0 +1,169 @@
+# psw-cli
+
+A secure CLI password manager with age encryption and macOS Keychain integration.
+
+## Features
+
+- **Master Password Storage**: Securely store your master password in macOS Keychain
+- **Age Encryption**: All secrets are encrypted using [age](https://github.com/FiloSottile/age) encryption
+- **Vault System**: Organize secrets into vaults with expiration times
+- **Vault Expiry**: Vaults automatically expire after a specified duration
+- **Verification Flow**: Re-authenticate expired vaults via secure HMAC-signed URLs
+- **24-Hour Approval**: One-time verification grants 24-hour access to expired vaults
+
+## Installation
+
+### From Source
+
+```bash
+git clone https://github.com/SammyLin/psw-cli.git
+cd psw-cli
+go build -o psw-cli .
+```
+
+### Install to PATH
+
+```bash
+go install
+```
+
+## Usage
+
+### Initialize Master Password
+
+Set your master password (stored in macOS Keychain):
+
+```bash
+psw-cli init
+```
+
+You will be prompted to enter a master password. Alternatively, pass it via flag:
+
+```bash
+psw-cli init --password "your-secure-password"
+```
+
+### Create a Vault
+
+Create a vault with an expiration time:
+
+```bash
+psw-cli vault create my-vault --expire 30d
+```
+
+Expiration format: `Nd` (days), `Nh` (hours), `Nm` (minutes)
+
+### Store a Secret
+
+Store a secret in a vault:
+
+```bash
+psw-cli post github-token ghp_xxxxxxx --vault my-vault
+```
+
+### Retrieve a Secret
+
+Get a secret from a vault:
+
+```bash
+psw-cli get github-token --vault my-vault
+```
+
+If the vault is expired, you will receive a verification URL to re-authenticate.
+
+### Delete a Secret
+
+Delete a secret from a vault:
+
+```bash
+psw-cli rm github-token --vault my-vault
+```
+
+### List Vaults
+
+List all vaults and their expiry status:
+
+```bash
+psw-cli vault list
+```
+
+### Renew a Vault
+
+Extend a vault's expiration:
+
+```bash
+psw-cli vault renew my-vault --expire 30d
+```
+
+## Security
+
+### Encryption
+
+- All secrets are encrypted using [age](https://github.com/FiloSottile/age) encryption
+- Master password is stored in macOS Keychain using `security` command
+- Age uses scrypt for key derivation (memory-hard function)
+
+### Verification Flow
+
+When accessing an expired vault:
+
+1. A UUID token is generated
+2. HMAC-SHA256 signature is created
+3. Verification URL is sent via Telegram (if configured)
+4. User clicks the link to confirm
+5. Token is marked as used, 24-hour approval is granted
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PSW_CLI_VERIFY_URL` | Base URL for verification links | `https://psw-cli.3mi.tw/verify` |
+| `PSW_CLI_TELEGRAM_URL` | Telegram API URL | `https://api.telegram.org/bot` |
+| `PSW_CLI_TELEGRAM_CHAT_ID` | Telegram chat ID for notifications | - |
+| `PSW_CLI_HMAC_KEY` | HMAC key for signing verification URLs | Default internal key |
+| `TELEGRAM_BOT_TOKEN` | Telegram bot token for notifications | - |
+
+## Directory Structure
+
+```
+psw-cli/
+├── main.go          # Entry point
+├── cmd/             # CLI commands
+│   ├── cmd.go       # CLI runner
+│   ├── init.go      # init command
+│   ├── post.go      # post command
+│   get.go          # get command
+│   rm.go           # rm command
+│   └── vault.go    # vault management commands
+├── pkg/             # Core packages
+│   ├── crypto.go    # Age encryption
+│   ├── keychain.go  # macOS Keychain integration
+│   ├── vault.go    # Vault management
+│   └── verify.go   # Verification URL generation
+├── go.mod           # Go module
+└── README.md        # This file
+```
+
+## Data Storage
+
+- **Vaults**: `~/.psw-cli/vaults/`
+- **Logs**: `~/.psw-cli/logs/`
+- **Verification Tokens**: `~/.psw-cli/tokens/`
+- **Approvals**: `~/.psw-cli/approvals/`
+- **Master Password**: macOS Keychain (service: `psw-cli`)
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `psw-cli init` | Set master password |
+| `psw-cli post <key> <value> --vault <vault>` | Store a secret |
+| `psw-cli get <key> --vault <vault>` | Retrieve a secret |
+| `psw-cli rm <key> --vault <vault>` | Delete a secret |
+| `psw-cli vault create <vault> --expire <duration>` | Create a vault |
+| `psw-cli vault list` | List all vaults |
+| `psw-cli vault renew <vault> --expire <duration>` | Renew a vault |
+
+## License
+
+MIT License
