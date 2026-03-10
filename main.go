@@ -30,6 +30,10 @@ func main() {
 	log.SetOutput(f)
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
+	// Load HMAC key from environment or use default
+	hmacSecret := getEnv("PSW_CLI_HMAC_SECRET", "psw-cli-default-key-change-in-production")
+	pkg.SetHMACSecret(hmacSecret)
+
 	// Load configuration from environment variables
 	config := &pkg.Config{
 		VerificationURL: getEnv("PSW_CLI_VERIFY_URL", "https://psw-cli.3mi.tw/verify"),

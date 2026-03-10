@@ -162,7 +162,7 @@ func verifyHMAC(vault, token, expire, sig string) bool {
 		return true
 	}
 
-	data := fmt.Sprintf("%s:%s:%s", vault, token, expire)
+	data := fmt.Sprintf("vault=%s&token=%s&expire=%s", vault, token, expire)
 	mac := hmac.New(sha256.New, []byte(config.HMACSecret))
 	mac.Write([]byte(data))
 	expectedSig := hex.EncodeToString(mac.Sum(nil))
@@ -303,7 +303,7 @@ func main() {
 	// Load configuration
 	config = &Config{
 		VerificationURL: getEnv("PSW_CLI_VERIFY_URL", "http://localhost:8080"),
-		HMACSecret:      getEnv("PSW_CLI_HMAC_SECRET", ""),
+		HMACSecret:      getEnv("PSW_CLI_HMAC_SECRET", "psw-cli-default-key-change-in-production"),
 	}
 
 	port := getEnv("PORT", "8080")
@@ -332,7 +332,13 @@ func main() {
 
 	// Serve static files from current directory for any additional assets
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/verify", http.StatusFound)
+		// If there are query parameters (verification request), redirect to /verify with them
+		// Otherwise just redirect to /verify
+		if r.URL.RawQuery != "" {
+			http.Redirect(w, r, "/verify?"+r.URL.RawQuery, http.StatusFound)
+		} else {
+			http.Redirect(w, r, "/verify", http.StatusFound)
+		}
 	})
 
 	log.Printf("Server started at http://localhost:%s", port)
