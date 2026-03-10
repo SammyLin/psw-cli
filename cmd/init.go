@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/SammyLin/psw-cli/pkg"
 	"github.com/urfave/cli/v3"
+	"golang.org/x/term"
 )
 
 // Init sets the master password and stores it in macOS Keychain.
@@ -24,7 +26,12 @@ func Init(ctx context.Context) *cli.Command {
 			password := cmd.String("password")
 			if password == "" {
 				fmt.Print("Enter master password: ")
-				fmt.Scanln(&password)
+				bytePassword, err := term.ReadPassword(int(os.Stdin.Fd()))
+				fmt.Println() // New line after hidden input
+				password = string(bytePassword)
+				if err != nil {
+					return fmt.Errorf("failed to read password: %w", err)
+				}
 			}
 
 			if password == "" {

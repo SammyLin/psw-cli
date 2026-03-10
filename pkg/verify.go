@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -42,6 +43,13 @@ var VerifyTokenDir = filepath.Join(os.Getenv("HOME"), ".psw-cli", "tokens")
 
 // HMACKey is used to sign verification URLs (in production, use environment variable).
 var HMACKey = []byte("psw-cli-default-key-change-in-production")
+
+// SetHMACSecret allows setting the HMAC key from external configuration.
+func SetHMACSecret(key string) {
+	if key != "" {
+		HMACKey = []byte(key)
+	}
+}
 
 func init() {
 	// Try to load HMAC key from environment
@@ -89,9 +97,13 @@ func GenerateVerificationURL(vaultName, baseURL string) (string, error) {
 	message := fmt.Sprintf("vault=%s&token=%s&expire=%d", vaultName, token, expireTimestamp)
 	signature := GenerateHMAC(message, HMACKey)
 
-	// Build verification URL
+	// Build verification URL - append /verify to base URL if not present
+	verifyURL := baseURL
+	if !strings.HasSuffix(verifyURL, "/verify") {
+		verifyURL = strings.TrimSuffix(verifyURL, "/") + "/verify"
+	}
 	verificationURL := fmt.Sprintf("%s?vault=%s&token=%s&expire=%d&sig=%s",
-		baseURL, vaultName, token, expireTimestamp, signature)
+		verifyURL, vaultName, token, expireTimestamp, signature)
 
 	log.Printf("Generated verification URL for vault '%s'", vaultName)
 	return verificationURL, nil
@@ -217,6 +229,28 @@ func SaveApproval(vaultName string, approval *Approval) error {
 
 // HasApproval checks if there is a valid 24-hour approval for a vault.
 func HasApproval(vaultName string) bool {
+	// Check in the verify/approved directory first (written by verify server)
+	approvedDir := filepath.Join(os.Getenv("HOME"), ".psw-cli", "verify", "approved", vaultName)
+	entries, err := os.ReadDir(approvedDir)
+	if err == nil {
+		for _, entry := range entries {
+			if !entry.IsDir() && filepath.Ext(entry.Name()) == ".json" {
+				data, err := os.ReadFile(filepath.Join(approvedDir, entry.Name()))
+				if err != nil {
+					continue
+				}
+				var approval Approval
+				if err := json.Unmarshal(data, &approval); err != nil {
+					continue
+				}
+				if time.Now().Before(approval.ExpiresAt) {
+					return true
+				}
+			}
+		}
+	}
+
+	// Fallback: check legacy approvals directory
 	approvalPath := filepath.Join(ApprovalDir, vaultName+".json")
 	approvalData, err := os.ReadFile(approvalPath)
 	if err != nil {
@@ -228,7 +262,6 @@ func HasApproval(vaultName string) bool {
 		return false
 	}
 
-	// Check if approval is still valid
 	if time.Now().After(approval.ExpiresAt) {
 		return false
 	}

@@ -1,5 +1,11 @@
 # psw-cli
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/SammyLin/psw-cli.svg)](https://pkg.go.dev/github.com/SammyLin/psw-cli)
+[![Tests](https://github.com/SammyLin/psw-cli/actions/workflows/test.yml/badge.svg)](https://github.com/SammyLin/psw-cli/actions/workflows/test.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/SammyLin/psw-cli)](https://goreportcard.com/report/github.com/SammyLin/psw-cli)
+[![age](https://img.shields.io/badge/age-v1-blue)](https://age-encryption.org/v1)
+[![macOS](https://img.shields.io/badge/macOS-Keychain-green)](https://developer.apple.com/documentation/security/keychain_services)
+
 A secure CLI password manager with age encryption and macOS Keychain integration.
 
 ## Features
@@ -109,19 +115,18 @@ When accessing an expired vault:
 
 1. A UUID token is generated
 2. HMAC-SHA256 signature is created
-3. Verification URL is sent via Telegram (if configured)
+3. Verification URL is generated
 4. User clicks the link to confirm
-5. Token is marked as used, 24-hour approval is granted
+5. Token is marked as used, 24-hour approval is written to `~/.psw-cli/verify/approved/{vault}/{token}.json`
 
 ### Environment Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `PSW_CLI_VERIFY_URL` | Base URL for verification links | `https://psw-cli.3mi.tw/verify` |
-| `PSW_CLI_TELEGRAM_URL` | Telegram API URL | `https://api.telegram.org/bot` |
-| `PSW_CLI_TELEGRAM_CHAT_ID` | Telegram chat ID for notifications | - |
-| `PSW_CLI_HMAC_KEY` | HMAC key for signing verification URLs | Default internal key |
-| `TELEGRAM_BOT_TOKEN` | Telegram bot token for notifications | - |
+| `PSW_CLI_VERIFY_URL` | Base URL for verification links | `http://localhost:8080` |
+| `PSW_CLI_HMAC_SECRET` | HMAC secret for signing verification URLs | - |
+| `PORT` | Server port | `8080` |
+| `LOG_DIR` | Directory for log files | - |
 
 ## Directory Structure
 
@@ -150,6 +155,7 @@ psw-cli/
 - **Logs**: `~/.psw-cli/logs/`
 - **Verification Tokens**: `~/.psw-cli/tokens/`
 - **Approvals**: `~/.psw-cli/approvals/`
+- **Verification Approvals**: `~/.psw-cli/verify/approved/{vault}/{token}.json`
 - **Master Password**: macOS Keychain (service: `psw-cli`)
 
 ## Commands

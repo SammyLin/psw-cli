@@ -8,13 +8,8 @@ import (
 	"path/filepath"
 
 	"github.com/SammyLin/psw-cli/cmd"
+	"github.com/SammyLin/psw-cli/pkg"
 )
-
-type Config struct {
-	VerificationURL string
-	TelegramBotURL  string
-	TelegramChatID  string
-}
 
 func main() {
 	// Ensure log directory exists
@@ -35,8 +30,12 @@ func main() {
 	log.SetOutput(f)
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
+	// Load HMAC key from environment or use default
+	hmacSecret := getEnv("PSW_CLI_HMAC_SECRET", "psw-cli-default-key-change-in-production")
+	pkg.SetHMACSecret(hmacSecret)
+
 	// Load configuration from environment variables
-	config := &Config{
+	config := &pkg.Config{
 		VerificationURL: getEnv("PSW_CLI_VERIFY_URL", "https://psw-cli.3mi.tw/verify"),
 		TelegramBotURL:  getEnv("PSW_CLI_TELEGRAM_URL", "https://api.telegram.org/bot"),
 		TelegramChatID:  getEnv("PSW_CLI_TELEGRAM_CHAT_ID", ""),
@@ -45,7 +44,7 @@ func main() {
 	ctx := context.WithValue(context.Background(), "config", config)
 
 	// Run CLI
-	if err := cmd.Run(ctx); err != nil {
+	if err := cmd.Run(ctx, os.Args); err != nil {
 		log.Printf("Error: %v", err)
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)

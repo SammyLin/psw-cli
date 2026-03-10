@@ -38,9 +38,9 @@ func Get(ctx context.Context) *cli.Command {
 				return fmt.Errorf("vault '%s' does not exist", vaultName)
 			}
 
-			// Check if vault is expired
-			if vaultMeta.IsExpired() {
-				log.Printf("Vault '%s' is expired", vaultName)
+			// Check if vault is expired and no valid approval exists
+			if vaultMeta.IsExpired() && !pkg.HasApproval(vaultName) {
+				log.Printf("Vault '%s' is expired and no valid approval found", vaultName)
 
 				// Generate verification URL
 				config := ctx.Value("config")
@@ -71,8 +71,7 @@ func Get(ctx context.Context) *cli.Command {
 				return fmt.Errorf("vault is expired. Use the verification URL to re-authenticate")
 			}
 
-			// Check if we have 24-hour approval
-			if pkg.HasApproval(vaultName) {
+			if vaultMeta.IsExpired() {
 				log.Printf("Using 24-hour approval for vault '%s'", vaultName)
 			}
 
