@@ -19,18 +19,25 @@ A secure CLI password manager with age encryption and macOS Keychain integration
 
 ## Installation
 
+### Homebrew (recommended)
+
+```bash
+brew tap SammyLin/tap
+brew install --cask psw-cli
+```
+
+To upgrade:
+
+```bash
+brew upgrade --cask psw-cli
+```
+
 ### From Source
 
 ```bash
 git clone https://github.com/SammyLin/psw-cli.git
 cd psw-cli
 go build -o psw-cli .
-```
-
-### Install to PATH
-
-```bash
-go install
 ```
 
 ## Usage
@@ -64,7 +71,7 @@ Expiration format: `Nd` (days), `Nh` (hours), `Nm` (minutes)
 Store a secret in a vault:
 
 ```bash
-psw-cli post github-token ghp_xxxxxxx --vault my-vault
+psw-cli set github-token ghp_xxxxxxx --vault my-vault
 ```
 
 ### Retrieve a Secret
@@ -163,7 +170,7 @@ psw-cli/
 | Command | Description |
 |---------|-------------|
 | `psw-cli init` | Set master password |
-| `psw-cli post <key> <value> --vault <vault>` | Store a secret |
+| `psw-cli set <key> <value> --vault <vault>` | Store a secret |
 | `psw-cli get <key> --vault <vault>` | Retrieve a secret |
 | `psw-cli rm <key> --vault <vault>` | Delete a secret |
 | `psw-cli vault create <vault> --expire <duration>` | Create a vault |
