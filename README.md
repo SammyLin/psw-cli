@@ -165,6 +165,106 @@ psw-cli/
 - **Verification Approvals**: `~/.psw-cli/verify/approved/{vault}/{token}.json`
 - **Master Password**: macOS Keychain (service: `psw-cli`)
 
+## OpenClaw SecretRef Integration
+
+psw-cli works as an [OpenClaw](https://github.com/openclaw/openclaw) SecretRef exec provider. This means your OpenClaw config can reference secrets stored in psw-cli vaults instead of storing API keys as plaintext.
+
+### Before (plaintext)
+
+```json
+{
+  "tools": {
+    "web": {
+      "search": {
+        "apiKey": "BSAlrRE9ka..."
+      }
+    }
+  }
+}
+```
+
+### After (SecretRef)
+
+```json
+{
+  "tools": {
+    "web": {
+      "search": {
+        "apiKey": {
+          "source": "exec",
+          "provider": "psw",
+          "id": "brave_search_key"
+        }
+      }
+    }
+  }
+}
+```
+
+### Setup
+
+1. Add psw-cli as a secrets provider in your OpenClaw config:
+
+```json
+{
+  "secrets": {
+    "providers": {
+      "psw": {
+        "source": "exec",
+        "command": "/opt/homebrew/bin/psw-cli",
+        "args": ["resolve", "-v", "my-vault"],
+        "passEnv": ["HOME", "PATH"],
+        "jsonOnly": true
+      }
+    }
+  }
+}
+```
+
+2. Store your secrets:
+
+```bash
+psw-cli set brave_search_key "your-api-key" -v my-vault
+psw-cli set openai_api_key "sk-..." -v my-vault
+```
+
+3. Replace plaintext values with SecretRef objects in your config.
+
+4. Verify with OpenClaw:
+
+```bash
+# Audit — should show plaintext=0
+openclaw secrets audit
+
+# Reload secrets
+openclaw secrets reload
+```
+
+### How it works
+
+OpenClaw sends a JSON request to psw-cli via stdin:
+
+```json
+{"protocolVersion": 1, "provider": "psw", "ids": ["brave_search_key", "openai_api_key"]}
+```
+
+psw-cli decrypts and returns:
+
+```json
+{"protocolVersion": 1, "values": {"brave_search_key": "BSA...", "openai_api_key": "sk-..."}}
+```
+
+Secrets are resolved at startup into an in-memory snapshot — they never touch disk as plaintext.
+
+### Shell scripting
+
+Use `--raw` to get just the value (no `Secret:` prefix):
+
+```bash
+API_KEY=$(psw-cli get my-key -v my-vault --raw)
+curl -H "Authorization: Bearer $API_KEY" https://api.example.com
+```
+
 ## Commands
 
 | Command | Description |
@@ -172,7 +272,9 @@ psw-cli/
 | `psw-cli init` | Set master password |
 | `psw-cli set <key> <value> --vault <vault>` | Store a secret |
 | `psw-cli get <key> --vault <vault>` | Retrieve a secret |
+| `psw-cli get <key> --vault <vault> --raw` | Retrieve value only (no prefix) |
 | `psw-cli rm <key> --vault <vault>` | Delete a secret |
+| `psw-cli resolve --vault <vault>` | SecretRef exec provider (stdin/stdout JSON) |
 | `psw-cli vault create <vault> --expire <duration>` | Create a vault |
 | `psw-cli vault list` | List all vaults |
 | `psw-cli vault renew <vault> --expire <duration>` | Renew a vault |
