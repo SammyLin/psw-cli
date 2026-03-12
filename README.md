@@ -40,6 +40,23 @@ cd psw-cli
 go build -o psw-cli .
 ```
 
+### ⚠️ macOS Gatekeeper Warning
+
+If you see a security warning when running psw-cli for the first time:
+
+> "Apple cannot verify whether psw-cli is malicious software"
+
+This is because psw-cli is not notarized by Apple. To allow it:
+
+1. Go to **System Settings** → **Privacy & Security**
+2. Click **"Open Anyway"** (or "Still Open")
+
+Or disable Gatekeeper temporarily:
+
+```bash
+sudo spctl --master-disable
+```
+
 ## Usage
 
 ### Initialize Master Password
